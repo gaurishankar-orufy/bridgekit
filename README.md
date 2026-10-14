@@ -8,10 +8,21 @@ Pluggable Android features that talk through one notification center, so a modul
 | `bridgekit-ui` | `SlotRegistry`, `Slot()`, `Overlays()`, `bridgeRoutes()`, `navigateIfExists()` | features that draw Compose UI, the host |
 | `bridgekit-platform` | BOM, one version for both | the host |
 
+[![](https://jitpack.io/v/gaurishankar-orufy/bridgekit.svg)](https://jitpack.io/#gaurishankar-orufy/bridgekit)
+
+## Install
+
+Published through [JitPack](https://jitpack.io/#gaurishankar-orufy/bridgekit); no token needed.
+
 ```kotlin
-implementation(platform("com.bridge.kit:bridgekit-platform:0.1.0"))
-implementation("com.bridge.kit:bridgekit-core")   // or bridgekit-ui for UI features
+// settings.gradle.kts → dependencyResolutionManagement.repositories
+maven { url = uri("https://jitpack.io") }
 ```
+```kotlin
+implementation(platform("com.github.gaurishankar-orufy.bridgekit:bridgekit-platform:v0.1.0"))
+implementation("com.github.gaurishankar-orufy.bridgekit:bridgekit-core")   // or bridgekit-ui for UI features
+```
+Kotlin packages are `com.bridge.kit.core` and `com.bridge.kit.ui`.
 
 ## A feature
 
@@ -39,7 +50,18 @@ val handled = NotificationCenter.default.post("haptics", "vibrate", mapOf("ms" t
 if (!handled) { /* module not in this build, or disabled */ }
 ```
 
-UI: features call `SlotRegistry.set(...)`, `addOverlay(...)`, `addRoute(...)` in `onAttach`; the host draws them with `Slot(name) { fallback }`, `Overlays(layer)` and `bridgeRoutes()` inside its `NavHost`.
+## UI
+
+| Kind | Feature calls | Host draws |
+|---|---|---|
+| Single slot (one owner on screen) | `SlotRegistry.set(this, "bottomBar") { ... }` in `onAttach` | `Slot("bottomBar") { fallback }` |
+| Overlay (always there, stacked) | `SlotRegistry.addOverlay(this, "fam", layer) { ... }` in `onAttach` | `Overlays(layer)` |
+| Modal (dialog / sheet that comes and goes) | `Modals.show(this, "nfcSheet") { ... }` / `Modals.close("nfcSheet")` | `ModalHost()` once |
+| Screen | `SlotRegistry.addRoute("passcode") { ... }` in `onAttach` | `bridgeRoutes()` in `NavHost` |
+
+**Priority, everywhere:** lower number wins (0 = highest). On a tie, the owner's module priority (`BridgeFeature.priority`) decides, then whoever came first. Default for both is 100.
+
+**Modals:** one at a time. The showing modal stays until its feature closes it; priority only decides who goes next. Whether tapping outside or back closes it is up to the feature's own sheet or dialog.
 
 ## Rules
 - Do not add a ProGuard `-keep` rule for `BridgeFeature`; it stops R8 from optimising `ServiceLoader`.
@@ -47,7 +69,12 @@ UI: features call `SlotRegistry.set(...)`, `addOverlay(...)`, `addRoute(...)` in
 - With the default `listensTo = null`, match on `category` and `name` together.
 - Register routes only in `onAttach`; navigate with `navigateIfExists`.
 
-## Build
+## Build and release
 ```bash
-./gradlew testDebugUnitTest publishToMavenLocal
+./gradlew testDebugUnitTest publishToMavenLocal   # local check
 ```
+Release: push a tag (`git tag v0.2.0 && git push origin v0.2.0`). JitPack builds it the first time someone requests that version,
+or open the JitPack page above and press "Get it" to build it right away. Build settings are in `jitpack.yml`.
+
+## License
+Apache License 2.0, see [LICENSE](LICENSE).

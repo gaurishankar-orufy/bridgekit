@@ -5,11 +5,13 @@ plugins {
 
 buildscript {
     dependencies {
-        classpath(libs.build.kotlin.gradle.plugin)   // pins Kotlin for AGP's built-in Kotlin, same as the Web2Native app
+        classpath(libs.build.kotlin.gradle.plugin)   // pins the Kotlin version used by AGP's built-in Kotlin
     }
 }
 
+// JitPack serves artifacts as com.github.<user>.<repo>:<module>:<tag> and sets VERSION to the tag.
+// Matching that here keeps the POMs (and the BOM's constraints) consistent with what consumers request.
 subprojects {
-    group = "com.bridge.kit"
-    version = "0.1.0"
+    group = "com.github.gaurishankar-orufy.bridgekit"
+    version = System.getenv("VERSION") ?: "0.1.0"
 }
