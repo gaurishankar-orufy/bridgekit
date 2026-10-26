@@ -14,6 +14,7 @@ android {
     }
     buildFeatures { compose = true }
     testOptions.unitTests.isReturnDefaultValues = true
+    testOptions.unitTests.isIncludeAndroidResources = true   // Robolectric Compose tests
     publishing { singleVariant("release") { withSourcesJar() } }
 }
 
@@ -23,6 +24,11 @@ dependencies {
     api(libs.androidx.compose.runtime)
     api(libs.androidx.navigation.compose)      // NavGraphBuilder / NavController / NavBackStackEntry are in the public API
     testImplementation(libs.junit)
+    // Compose UI tests on the JVM (Robolectric); test-only, not part of the published library
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.compose.foundation)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
 publishing {

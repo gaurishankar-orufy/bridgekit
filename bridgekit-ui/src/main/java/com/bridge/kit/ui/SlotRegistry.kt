@@ -34,9 +34,10 @@ object SlotRegistry {
 
     /** Puts [owner]'s [content] into [slot]. Calling again for the same owner and slot replaces it. */
     fun set(owner: BridgeFeature, slot: String, priority: Int = BridgeFeature.DEFAULT_PRIORITY, content: @Composable () -> Unit) {
-        val previous = slots.firstOrNull { it.slot == slot && it.ownerId == owner.id }
-        val order = previous?.order?.takeIf { it.priority == priority } ?: UiOrder.next(priority, owner.priority)
-        slots.removeAll { it.slot == slot && it.ownerId == owner.id }
+        // At most one entry per owner and slot. Remove it by index: removeAll { } on a SnapshotStateList is O(n²).
+        val i = slots.indexOfFirst { it.slot == slot && it.ownerId == owner.id }
+        val order = slots.getOrNull(i)?.order?.takeIf { it.priority == priority } ?: UiOrder.next(priority, owner.priority)
+        if (i >= 0) slots.removeAt(i)
         slots.firstOrNull { it.slot == slot && it.order.ties(order) }?.let {
             conflict("Slot '$slot': '${it.ownerId}' and '${owner.id}' have the same priority and module priority")
         }
@@ -55,12 +56,13 @@ object SlotRegistry {
         priority: Int = BridgeFeature.DEFAULT_PRIORITY,
         content: @Composable () -> Unit,
     ) {
-        overlayList.removeAll { it.id == id }
+        removeOverlay(id)
         overlayList += Overlay(id, layer, UiOrder.next(priority, owner.priority), content)
     }
 
     fun removeOverlay(id: String) {
-        overlayList.removeAll { it.id == id }
+        val i = overlayList.indexOfFirst { it.id == id }   // ids are unique; see set() for why not removeAll { }
+        if (i >= 0) overlayList.removeAt(i)
     }
 
     /** Overlays of one [layer] in drawing order: least important first, so the winner is drawn last (on top). */

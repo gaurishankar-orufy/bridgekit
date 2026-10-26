@@ -42,7 +42,8 @@ object Modals {
 
     /** Removes [id], whether it is showing or still waiting. If it was showing, the next one appears. */
     fun close(id: String) {
-        entries.removeAll { it.id == id }
+        val i = entries.indexOfFirst { it.id == id }   // ids are unique; removeAll { } on a SnapshotStateList is O(n²)
+        if (i >= 0) entries.removeAt(i)
         if (showingId == id) showingId = entries.minByOrNull { it.order }?.id
     }
 
